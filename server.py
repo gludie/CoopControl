@@ -41,7 +41,7 @@ class Coop(object):
     MAX_MANUAL_MODE_TIME = 60 * 60
     MAX_MOTOR_ON = 45
     TEMP_INTERVAL = 60 * 5
-    TIMEZONE_CITY = 'Boston'
+    TIMEZONE_CITY = 'Vienna'
     AFTER_SUNSET_DELAY = 60
     AFTER_SUNRISE_DELAY = 3 * 60
     SECOND_CHANCE_DELAY = 60 * 10
@@ -61,10 +61,6 @@ class Coop(object):
     PIN_MOTOR_ENABLE = 18
     PIN_MOTOR_A = 12
     PIN_MOTOR_B = 16
-
-    PIN_TEMP_WATER = 4 # Can't change
-    PIN_TEMP1 = 22
-    PIN_TEMP2 = 6
 
     def __init__(self):
         self.door_status = Coop.UNKNOWN

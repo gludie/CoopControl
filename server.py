@@ -21,7 +21,6 @@ from astral import Astral
 # Record how long it takes to open the door, close
 # ERror states
 
-
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -50,11 +49,15 @@ class Coop(object):
     UP = OPEN = TRIGGERED = MANUAL = 1
     DOWN = CLOSED = HALT = 2
 
+    #Status pin
     PIN_LED = 5
+    #Input pins for manual steering
     PIN_BUTTON_UP = 13
     PIN_BUTTON_DOWN = 19
+    #top and bottom sensor of the door (typically hal)
     PIN_SENSOR_TOP = 20
     PIN_SENSOR_BOTTOM = 21
+    #Motor (H-Bridge using !)
     PIN_MOTOR_ENABLE = 18
     PIN_MOTOR_A = 12
     PIN_MOTOR_B = 16
@@ -95,13 +98,10 @@ class Coop(object):
 
         t1 = Thread(target = self.checkTriggers)
         t2 = Thread(target = self.checkTime)
-        t3 = Thread(target = self.readTemps)
         t1.setDaemon(True)
         t2.setDaemon(True)
-        t3.setDaemon(True)
         t1.start()
         t2.start()
-        t3.start()
 
         host = 'localhost'
         port = 55567
@@ -132,7 +132,7 @@ class Coop(object):
         self.stopDoor(0)
 
     def setupPins(self):
-        GPIO.setmode(GPIO.BCM)
+        GPIO.setmode(GPIO.BOARD)
 
         GPIO.setup(Coop.PIN_MOTOR_ENABLE, GPIO.OUT)
         GPIO.setup(Coop.PIN_MOTOR_A, GPIO.OUT)
@@ -211,7 +211,7 @@ class Coop(object):
             request = requests.post(
                 self.mail_url,
                 auth=("api", self.mail_key),
-                data={"from": "Chickens <mailgun@mailgun.dxxd.net>",
+                data={"from": "Pippis <pippis@mailgun.dxxd.net>",
                       "to": [self.mail_recipient],
                       "subject": subject,
                       "text": content}) 
@@ -221,7 +221,7 @@ class Coop(object):
 
     def postData(self, endpoint, payload):
         try:
-            r = requests.post("http://ryandetzel.com:3000/api/" + endpoint, data=payload)
+            r = requests.post("http://yourhost.com:port/api/" + endpoint, data=payload)
         except Exception as e:
             logger.error(e)
 
@@ -247,67 +247,6 @@ class Coop(object):
                     self.openDoor()
             time.sleep(1)
 
-    def readTempRaw(self):
-        f = open(self.device_file, 'r')
-        lines = f.readlines()
-        f.close()
-        return lines
-
-    def waterTemp(self):
-        if self.device_file is None:
-            return
-        lines = self.readTempRaw()
-        while lines[0].strip()[-3:] != 'YES':
-            time.sleep(0.2)
-            lines = self.readTempRaw()
-        equals_pos = lines[1].find('t=')
-        if equals_pos != -1:
-            temp_string = lines[1][equals_pos+2:]
-            temp_c = float(temp_string) / 1000.0
-            temp_f = temp_c * 9.0 / 5.0 + 32.0
-            self.temp_water = temp_f
-            logger.info("Water temp: %f" % temp_f)
-
-
-            payload = {'name': 'water', 'temperature': temp_f, 'humidity': 0, 'ts': datetime.datetime.now() }
-            self.postData('temperature', payload)
-
-    def tempForPin(self, pin):
-        retries = 3
-        humidity, temperature = Adafruit_DHT.read_retry(Adafruit_DHT.AM2302, pin)
-        while (humidity is None or temperature is None) and retries > 0:
-            time.sleep(1)
-            humidity, temperature = Adafruit_DHT.read_retry(Adafruit_DHT.AM2302, pin)
-            retries -= 1
-
-        if humidity is not None and temperature is not None:
-            temp_f = temperature * 9.0 / 5.0 + 32.0
-            #if cache[pin] and abs(cache[pin] - temp_f) > 20:
-            #    retries -= 1
-            #    continue
-            logger.info('Temp={0:0.1f}*F  Humidity={1:0.1f}%'.format(temp_f, humidity))
-            return temp_f, humidity
-
-        logger.error('Failed to get reading temp. Try again!')
-        return (0, 0)
-
-    def otherTemps(self):
-        (self.temp1, self.humidity1) = self.tempForPin(Coop.PIN_TEMP1)
-        (self.temp2, self.humidity2) = self.tempForPin(Coop.PIN_TEMP2)
-        
-        ts = datetime.datetime.now()
-        payload = {'name': 'temp1', 'temperature': self.temp1, 'humidity': self.humidity1, 'ts': ts}
-        self.postData('temperature', payload)
-
-        payload = {'name': 'temp2', 'temperature': self.temp2, 'humidity': self.humidity2, 'ts': ts }
-        self.postData('temperature', payload)
-
-    def readTemps(self):
-        while True:
-            self.waterTemp()
-            self.otherTemps()
-            time.sleep(Coop.TEMP_INTERVAL)
-
     def currentTriggerStatus(self):
         bottom = GPIO.input(Coop.PIN_SENSOR_BOTTOM)
         top = GPIO.input(Coop.PIN_SENSOR_TOP)
@@ -324,11 +263,12 @@ class Coop(object):
                 self.stopDoor(1)
 
             # Check for issues
+            # started_motor is set when turning on for up or down
             if self.started_motor is not None:
                 if (datetime.datetime.now() - self.started_motor).seconds > Coop.MAX_MOTOR_ON:
                     self.emergencyStopDoor('Motor ran too long')
-
-            time.sleep(0.01)
+			# sleep some time, but seems to be quite to short ... let sleep longer than 0.01
+            time.sleep(0.1)
 
     def changeDoorMode(self, new_mode):
         if new_mode == self.door_mode:
@@ -420,8 +360,8 @@ class Coop(object):
                     self.changeDoorMode(Coop.AUTO)
                 elif (data == 'halt'):
                     self.changeDoorMode(Coop.HALT)
-                #msg = "You sent me: %s" % data
-                #clientsocket.send(msg)
+                msg = "You sent me: %s" % data
+                clientsocket.send(msg)
             time.sleep(0.01)
         clientsocket.close()
 

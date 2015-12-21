@@ -7,7 +7,6 @@ import thread
 import pytz
 import time
 import sys
-import Adafruit_DHT
 import glob
 import datetime
 import RPi.GPIO as GPIO
@@ -208,15 +207,18 @@ class Coop(object):
  #           r = requests.post("http://yourhost.com:port/api/" + endpoint, data=payload)
  #       except Exception as e:
  #           logger.error(e)
-
+    def getSunsetrise()
+        current = datetime.datetime.now(pytz.timezone(self.city.timezone))
+        sun = self.city.sun(date=datetime.datetime.now(), local=True)
+        after_sunset = sun["sunset"] + datetime.timedelta(minutes = Coop.AFTER_SUNSET_DELAY)
+        after_sunrise = sun["sunrise"] + datetime.timedelta(minutes = Coop.AFTER_SUNRISE_DELAY) 
+        
+        return (after_sunset, after_sunrise)
+        
     def checkTime(self):
         while True:
             if self.door_mode == Coop.AUTO:
-                current = datetime.datetime.now(pytz.timezone(self.city.timezone))
-                sun = self.city.sun(date=datetime.datetime.now(), local=True)
-
-                after_sunset = sun["sunset"] + datetime.timedelta(minutes = Coop.AFTER_SUNSET_DELAY)
-                after_sunrise = sun["sunrise"] + datetime.timedelta(minutes = Coop.AFTER_SUNRISE_DELAY) 
+                (after_sunset, after_sunrise) = getSunsetrise()
 
                 if (current < after_sunrise or current > after_sunset) and self.door_status != Coop.CLOSED and self.direction != Coop.DOWN:
                     logger.info("Door should be closed based on time of day")
@@ -320,30 +322,34 @@ class Coop(object):
                     self.changeDoorMode(Coop.AUTO)
 
     def getstatus():
-        status_msg = "Doorstatus : "
+        msg = "Doorstatus : "
         
         if (self.door_status == Coop.CLOSED):
-            status_msg += " CLOSED"
+            msg += " CLOSED"
         elif (self.door_status == Coop.OPEN):
-            status_msg += " OPEN"
+            msg += " OPEN"
         else:
-            status_msg += "UNKNOWN
+            msg += "UNKNOWN
         
-        statusmsg += "\nMode: "
+        msg += "\nMode: "
         if (self.door_mode == Coop.MANUAL):
-            status_msg += "MANUAL"
+            msg += "MANUAL"
         elif (self.door_mode == Coop.AUTO):
-            status_msg += "AUTO"
+            msg += "AUTO"
         else:
-            status_msg += "UNKNOWN"
+            msg += "UNKNOWN"
             
-        statusmsg += "\nTriggerstatus: "
+        msg += "\nTriggerstatus: "
         (top, bottom) = self.currentTriggerStatus()
-        statusmsg += "bottom(" + str(bottom) + "), top(" + str(top) +")"
+        msg += "bottom(" + str(bottom) + "), top(" + str(top) +")"
         
-        self.sendEmail('Coop Status', statusmsg)
+        #sunset and sunrise
+        (sunset, sunrise) = getSunsetrise()
+        msg += ", Sunset: " + str(sunset) + ", Sunrise: " + str(sunrise)
         
-        return statusmsg
+        #self.sendEmail('Coop Status', msg)
+        
+        return msg
 
 
     def handler(self, clientsocket, clientaddr):

@@ -72,25 +72,12 @@ class Coop(object):
         self.direction = Coop.IDLE
         self.door_mode = Coop.AUTO
         self.manual_mode_start = 0
-        self.temp_water = 0
-        self.temp1 = 0
-        self.temp2 = 0
-        self.humidity1 = 0
-        self.humidity2 = 0
         self.second_chance = True
         self.cache = {}
 
         self.mail_key = os.environ.get('MAILGUN_KEY') or exit('You need a key set')
         self.mail_url = os.environ.get('MAILGUN_URL') or exit('You need a key set')
         self.mail_recipient = os.environ.get('MAILGUN_RECIPIENT') or exit('You need a key set')
-
-        try:
-            base_dir = '/sys/bus/w1/devices/'
-            device_folder = glob.glob(base_dir + '28*')[0]
-            self.device_file = device_folder + '/w1_slave'
-        except:
-            self.device_file = None
-            pass
 
         a = Astral()
         self.city = a[Coop.TIMEZONE_CITY]

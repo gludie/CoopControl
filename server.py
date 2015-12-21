@@ -253,7 +253,8 @@ class Coop(object):
             if self.started_motor is not None:
                 if (datetime.datetime.now() - self.started_motor).seconds > Coop.MAX_MOTOR_ON:
                     self.emergencyStopDoor('Motor ran too long')
-			# sleep some time, but seems to be quite to short ... let sleep longer than 0.01
+            
+            # sleep some time, but seems to be quite to short ... let sleep longer than 0.01
             time.sleep(0.1)
 
     def changeDoorMode(self, new_mode):

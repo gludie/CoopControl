@@ -172,9 +172,10 @@ class Coop(object):
         else:
             logger.info("Door is in an unknown state")
             self.door_status = Coop.UNKNOWN
-
-            payload = {'status': self.door_status, 'ts': datetime.datetime.now() }
-            self.postData('door', payload)
+            self.sendEmail('Coop door is UNKNOWN', 'Oops!')
+            
+            #payload = {'status': self.door_status, 'ts': datetime.datetime.now() }
+            #self.postData('door', payload)
 
     def emergencyStopDoor(self, reason):
         ## Just shut it off no matter what
@@ -202,11 +203,11 @@ class Coop(object):
         except Exception as e:
             logger.error("Error: " + e)
 
-    def postData(self, endpoint, payload):
-        try:
-            r = requests.post("http://yourhost.com:port/api/" + endpoint, data=payload)
-        except Exception as e:
-            logger.error(e)
+ #   def postData(self, endpoint, payload):
+ #       try:
+ #           r = requests.post("http://yourhost.com:port/api/" + endpoint, data=payload)
+ #       except Exception as e:
+ #           logger.error(e)
 
     def checkTime(self):
         while True:
@@ -318,12 +319,39 @@ class Coop(object):
                     logger.info("In manual mode too long, switching")
                     self.changeDoorMode(Coop.AUTO)
 
+    def getstatus():
+        status_msg = "Doorstatus : "
+        
+        if (self.door_status == Coop.CLOSED):
+            status_msg += " CLOSED"
+        elif (self.door_status == Coop.OPEN):
+            status_msg += " OPEN"
+        else:
+            status_msg += "UNKNOWN
+        
+        statusmsg += "\nMode: "
+        if (self.door_mode == Coop.MANUAL):
+            status_msg += "MANUAL"
+        elif (self.door_mode == Coop.AUTO):
+            status_msg += "AUTO"
+        else:
+            status_msg += "UNKNOWN"
+            
+        statusmsg += "\nTriggerstatus: "
+        (top, bottom) = self.currentTriggerStatus()
+        statusmsg += "bottom(" + str(bottom) + "), top(" + str(top) +")"
+        
+        self.sendEmail('Coop Status', statusmsg)
+        
+        return statusmsg
+
 
     def handler(self, clientsocket, clientaddr):
         #logger.info("Accepted connection from: %s " % clientaddr)
 
         while True:
             data = clientsocket.recv(1024)
+            addinfo = ""
             if not data:
                 break
             else:
@@ -343,7 +371,12 @@ class Coop(object):
                     self.changeDoorMode(Coop.AUTO)
                 elif (data == 'halt'):
                     self.changeDoorMode(Coop.HALT)
+                elif (data == 'status'):
+                    addinfo = self.getstatus()
+                
                 msg = "You sent me: %s" % data
+                msg += "\n" addinfo
+                
                 clientsocket.send(msg)
             time.sleep(0.01)
         clientsocket.close()

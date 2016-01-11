@@ -17,7 +17,7 @@ Check also https://github.com/ryanrdetzel !
 * proper config handling
 * using any push client api for apps (mobile support)
 * propably use checkTime for blinking state instead of extra thread for manual mode (save ressources)
-
+* nice to have: jQuery/AJAX for status updates in webclient
 
 # Coop server
 Control the door from any other app:

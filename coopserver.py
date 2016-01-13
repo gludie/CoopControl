@@ -181,6 +181,7 @@ class Coop(object):
         (top, bottom) = self.currentTriggerStatus()
         if (bottom == Coop.TRIGGERED):
             logger.info("closeDoor(): Door is already closed")
+            self.door_status = Coop.CLOSED
             return
         logger.info("closeDoor(): Closing door")
         self.started_motor = datetime.datetime.now()
@@ -193,6 +194,7 @@ class Coop(object):
         (top, bottom) = self.currentTriggerStatus()
         if (top == Coop.TRIGGERED):
             logger.info("openDoor(): Door is already open")
+            self.door_status = Coop.OPEN
             return
         logger.info("openDoor(): Opening door")
         self.started_motor = datetime.datetime.now()
